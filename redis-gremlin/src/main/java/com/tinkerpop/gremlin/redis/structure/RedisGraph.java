@@ -13,6 +13,7 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import redis.clients.jedis.Jedis;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -21,6 +22,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+
 
 /**
  * An in-sideEffects, reference implementation of the property graph interfaces provided by Gremlin3.

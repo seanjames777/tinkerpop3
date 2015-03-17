@@ -10,6 +10,9 @@
     </parent>
     <artifactId>redis-gremlin</artifactId>
     <name>Redis Gremlin: An Implementation of TinkerPop3 for the Redis Data Structure Server</name>
+    <properties>
+        <jedis.version>2.6.2</jedis.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.tinkerpop</groupId>
@@ -32,6 +35,13 @@
             <artifactId>gremlin-groovy-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${jedis.version}</version>
+            <type>jar</type>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>
