@@ -20,7 +20,10 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
     private final V value;
 
     public RedisVertexProperty(final RedisVertex vertex, final String key, final V value, final Object... propertyKeyValues) {
-        super(RedisHelper.getNextId(vertex.graph), key, vertex.graph);
+        super(
+                -1, // TODO get next ID from redis
+                key, vertex.graph);
+
         this.vertex = vertex;
         this.key = key;
         this.value = value;

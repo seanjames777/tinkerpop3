@@ -10,8 +10,8 @@ import org.junit.runner.RunWith;
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-@RunWith(StructureStandardSuite.class)
-@StructureStandardSuite.GraphProviderClass(provider = RedisGraphProvider.class, graph = RedisGraph.class)
-public class RedisGraphStructureStandardTest {
+//@RunWith(StructureStandardSuite.class)
+//@StructureStandardSuite.GraphProviderClass(provider = RedisGraphProvider.class, graph = RedisGraph.class)
+//public class RedisGraphStructureStandardTest {
 
-}
+//}

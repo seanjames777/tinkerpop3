@@ -39,6 +39,7 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
     @Override
     public void remove() {
+        /*
         if (this.removed)
             throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
         final RedisVertex outVertex = (RedisVertex) this.outVertex;
@@ -58,6 +59,9 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
         this.graph.edges.remove(this.id());
         this.properties.clear();
         this.removed = true;
+        */
+
+        // TODO
     }
 
     @Override

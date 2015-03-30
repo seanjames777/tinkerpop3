@@ -33,7 +33,7 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> VertexProperty<V> property(final String key) {
-        if (removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
+        /*if (removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
 
         if (this.properties.containsKey(key)) {
             final List<VertexProperty> list = (List) this.properties.get(key);
@@ -41,8 +41,10 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
                 throw Vertex.Exceptions.multiplePropertiesExistForProvidedKey(key);
             else
                 return list.get(0);
-        } else
-            return VertexProperty.<V>empty();
+        } else*/
+
+        // TODO
+        return VertexProperty.<V>empty();
     }
 
     @Override
@@ -52,6 +54,7 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> VertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+        /*
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         final Optional<Object> optionalId = ElementHelper.getIdValue(keyValues);
@@ -64,18 +67,27 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
         list.add(vertexProperty);
         this.properties.put(key, list);
         ElementHelper.attachProperties(vertexProperty, keyValues);
-        return vertexProperty;
+        return vertexProperty;*/
+
+        // TODO
+        return VertexProperty.<V>empty();
     }
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
+        /*
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
         return RedisHelper.addEdge(this.graph, this, (RedisVertex) vertex, label, keyValues);
+        */
+
+        // TODO
+        return null;
     }
 
     @Override
     public void remove() {
+        /*
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
         final List<Edge> edges = new ArrayList<>();
         this.iterators().edgeIterator(Direction.BOTH).forEachRemaining(edges::add);
@@ -83,6 +95,9 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
         this.properties.clear();
         this.graph.vertices.remove(this.id);
         this.removed = true;
+        */
+
+        // TODO
     }
 
     @Override
@@ -104,11 +119,15 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public Iterator<Edge> edgeIterator(final Direction direction, final String... edgeLabels) {
-        return (Iterator) RedisHelper.getEdges(this, direction, edgeLabels);
+        // return (Iterator) RedisHelper.getEdges(this, direction, edgeLabels);
+        // TODO
+        return null;
     }
 
     @Override
     public Iterator<Vertex> vertexIterator(final Direction direction, final String... edgeLabels) {
-        return (Iterator) RedisHelper.getVertices(this, direction, edgeLabels);
+        // TODO
+        return null;
+        //return (Iterator) RedisHelper.getVertices(this, direction, edgeLabels);
     }
 }

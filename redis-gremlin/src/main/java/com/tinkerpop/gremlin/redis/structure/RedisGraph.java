@@ -43,20 +43,27 @@ import java.util.stream.Stream;
 
 public class RedisGraph implements Graph, Graph.Iterators {
 
+    private Jedis jedis = null;
+
     private static final Configuration EMPTY_CONFIGURATION = new BaseConfiguration() {{
         this.setProperty(Graph.GRAPH, RedisGraph.class.getName());
     }};
 
-    protected Long currentId = -1l;
-    protected Map<Object, Vertex> vertices = new ConcurrentHashMap<>();
-    protected Map<Object, Edge> edges = new ConcurrentHashMap<>();
-    protected RedisGraphVariables variables = new RedisGraphVariables();
+    private static final String DEFAULT_HOST = "localhost";
+    private static final int DEFAULT_PORT = 6379;
+    private static final String HOST_PROPERTY = "host";
+    private static final String PORT_PROPERTY = "port";
+
+    private long graphId = -1;
 
     /**
      * An empty private constructor that initializes {@link RedisGraph} with no {@link com.tinkerpop.gremlin.structure.strategy.GraphStrategy}.  Primarily
      * used for purposes of serialization issues.
      */
-    private RedisGraph() {
+    private RedisGraph(String host, int port) {
+        jedis = new Jedis(host, port);
+
+        graphId = jedis.incr("globals::next_graph_id");
     }
 
     /**
@@ -87,27 +94,47 @@ public class RedisGraph implements Graph, Graph.Iterators {
      * @return a newly opened {@link com.tinkerpop.gremlin.structure.Graph}
      */
     public static RedisGraph open(final Configuration configuration) {
-        return new RedisGraph();
+        String host = DEFAULT_HOST;
+        int port = DEFAULT_PORT;
+
+        if (configuration != null) {
+            if (configuration.containsKey(HOST_PROPERTY))
+                host = configuration.getString(HOST_PROPERTY);
+
+            if (configuration.containsKey(PORT_PROPERTY))
+                port = configuration.getInt(PORT_PROPERTY);
+        }
+
+        return new RedisGraph(host, port);
     }
 
     ////////////// STRUCTURE API METHODS //////////////////
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
+        // TODO: The reference implementation extracts a possible ID and label from the key/value pairs.
+        // Because we are assigning monotonically increasing vertex/edge ID's, we don't match that behavior
+
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
+
+        //Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
 
-        if (null != idValue) {
+        /*if (null != idValue) {
             if (this.vertices.containsKey(idValue))
                 throw Exceptions.vertexWithIdAlreadyExists(idValue);
         } else {
             idValue = RedisHelper.getNextId(this);
-        }
+        }*/
 
-        final Vertex vertex = new RedisVertex(idValue, label, this);
-        this.vertices.put(vertex.id(), vertex);
-        ElementHelper.attachProperties(vertex, keyValues);
+        // TODO: Move the string constants out of the implementation, and maybe use a StringBuilder for performance
+        long id = jedis.incr("graph::" + Long.toString(graphId) + "::next_vertex_id");
+
+        final Vertex vertex = new RedisVertex(id, label, this);
+
+        // TODO: Support vertex properties
+        // ElementHelper.attachProperties(vertex, keyValues);
+
         return vertex;
     }
 
@@ -118,24 +145,23 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Variables variables() {
-        return this.variables;
+        // TODO: Implement graph variables
+        return null;
     }
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, "vertices:" + this.vertices.size() + " edges:" + this.edges.size());
+        // TODO: Add a more helpful string
+        return StringFactory.graphString(this, "");
     }
 
     public void clear() {
-        this.vertices.clear();
-        this.edges.clear();
-        this.variables = new RedisGraphVariables();
-        this.currentId = 0l;
+        // TODO clear the collections in Redis
     }
 
     @Override
     public void close() {
-
+        jedis.close();
     }
 
     @Override
@@ -155,24 +181,14 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
-        if (0 == vertexIds.length) {
-            return this.vertices.values().iterator();
-        } else if (1 == vertexIds.length) {
-            final Vertex vertex = this.vertices.get(vertexIds[0]);
-            return null == vertex ? Collections.emptyIterator() : IteratorUtils.of(vertex);
-        } else
-            return Stream.of(vertexIds).map(this.vertices::get).filter(Objects::nonNull).iterator();
+        // TODO
+        return null;
     }
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
-        if (0 == edgeIds.length) {
-            return this.edges.values().iterator();
-        } else if (1 == edgeIds.length) {
-            final Edge edge = this.edges.get(edgeIds[0]);
-            return null == edge ? Collections.emptyIterator() : IteratorUtils.of(edge);
-        } else
-            return Stream.of(edgeIds).map(this.edges::get).filter(Objects::nonNull).iterator();
+        // TODO
+        return null;
     }
 
     /**
