@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
  */
 public abstract class RedisElement implements Element, Element.Iterators {
 
-    protected Map<String, List<Property>> properties = new HashMap<>();
+    protected Map<String, List <Property>> properties = new HashMap<>();
+
     protected final Object id;
     protected final String label;
     protected final RedisGraph graph;

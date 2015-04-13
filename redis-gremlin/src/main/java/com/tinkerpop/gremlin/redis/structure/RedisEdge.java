@@ -1,9 +1,7 @@
 package com.tinkerpop.gremlin.redis.structure;
 
-import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -12,20 +10,32 @@ import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
-    protected final Vertex inVertex;
-    protected final Vertex outVertex;
+    // Load edge from database
+    protected RedisEdge(final Object id, final RedisGraph graph) {
+        super(id,
+                graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label"),
+                graph);
+    }
 
-    protected RedisEdge(final Object id, final Vertex outVertex, final String label, final Vertex inVertex, final RedisGraph graph) {
-        super(id, label, graph);
-        this.outVertex = outVertex;
-        this.inVertex = inVertex;
+    // Create new edge
+    protected RedisEdge(final Vertex outVertex, final String label, final Vertex inVertex, final RedisGraph graph) {
+        super(graph.getDatabase().incr("graph::" + String.valueOf(graph.getId()) + "::next_edge_id"),
+                label, graph);
+
+        graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in", String.valueOf(inVertex.id()));
+        graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out", String.valueOf(outVertex.id()));
+        graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
+
+        graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(inVertex.id()) + "::edges_in", (Long)id, String.valueOf(id));
+        graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(outVertex.id()) + "::edges_out", (Long)id, String.valueOf(id));
+
+        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::edges", (Long)id, String.valueOf(id));
     }
 
     @Override
@@ -39,35 +49,22 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
     @Override
     public void remove() {
-        /*
-        if (this.removed)
-            throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
-        final RedisVertex outVertex = (RedisVertex) this.outVertex;
-        final RedisVertex inVertex = (RedisVertex) this.inVertex;
+        graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in");
+        graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out");
+        graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
 
-        if (null != outVertex && null != outVertex.outEdges) {
-            final Set<Edge> edges = outVertex.outEdges.get(this.label());
-            if (null != edges)
-                edges.remove(this);
-        }
-        if (null != inVertex && null != inVertex.inEdges) {
-            final Set<Edge> edges = inVertex.inEdges.get(this.label());
-            if (null != edges)
-                edges.remove(this);
-        }
+        String inVertex = graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in");
+        String outVertex = graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out");
 
-        this.graph.edges.remove(this.id());
-        this.properties.clear();
-        this.removed = true;
-        */
+        graph.getDatabase().zrem("vertex::" + String.valueOf(graph.getId()) + "::" + inVertex + "::edges_in", String.valueOf(id));
+        graph.getDatabase().zrem("vertex::" + String.valueOf(graph.getId()) + "::" + outVertex + "::edges_out", String.valueOf(id));
 
-        // TODO
+        graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::edges", String.valueOf(id));
     }
 
     @Override
     public String toString() {
         return StringFactory.edgeString(this);
-
     }
 
     //////////////////////////////////////////////
@@ -79,13 +76,19 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Direction direction) {
+        RedisVertex outVertex, inVertex;
+
         switch (direction) {
             case OUT:
-                return IteratorUtils.of(this.outVertex);
+                outVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out"), graph);
+                return IteratorUtils.of(outVertex);
             case IN:
-                return IteratorUtils.of(this.inVertex);
+                inVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in"), graph);
+                return IteratorUtils.of(inVertex);
             default:
-                return IteratorUtils.of(this.outVertex, this.inVertex);
+                outVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out"), graph);
+                inVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in"), graph);
+                return IteratorUtils.of(outVertex, inVertex);
         }
     }
 

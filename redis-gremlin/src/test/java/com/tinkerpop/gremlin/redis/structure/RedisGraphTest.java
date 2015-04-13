@@ -41,11 +41,9 @@ public class RedisGraphTest {
 
     @Test
     public void testPlay() {
-        System.out.println("HELLO, WORLD!");
-
         Graph g = RedisGraph.open();
 
-        /*Vertex v1 = g.addVertex(T.id, "1", "animal", "males");
+        Vertex v1 = g.addVertex(T.id, "1", "animal", "males");
         Vertex v2 = g.addVertex(T.id, "2", "animal", "puppy");
         Vertex v3 = g.addVertex(T.id, "3", "animal", "mama");
         Vertex v4 = g.addVertex(T.id, "4", "animal", "puppy");
@@ -66,8 +64,6 @@ public class RedisGraphTest {
         v6.addEdge("link", v8, "weight", 3f);
         v7.addEdge("link", v9, "weight", 1f);
         v8.addEdge("link", v9, "weight", 7f);
-
-        v1.withSack(() -> Float.MIN_VALUE).repeat(outE().sack(Operator.max, "weight").inV()).times(5).sack().submit(g.compute()).forEachRemaining(System.out::println);*/
     }
 
 }

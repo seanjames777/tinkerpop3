@@ -1,27 +1,19 @@
 package com.tinkerpop.gremlin.redis.structure;
 
-import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
-import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import redis.clients.jedis.Jedis;
 
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 
 
@@ -55,6 +47,15 @@ public class RedisGraph implements Graph, Graph.Iterators {
     private static final String PORT_PROPERTY = "port";
 
     private long graphId = -1;
+
+    // TODO: These two methods should probably not be exposed publicly
+    public long getId() {
+        return graphId;
+    }
+
+    public Jedis getDatabase() {
+        return jedis;
+    }
 
     /**
      * An empty private constructor that initializes {@link RedisGraph} with no {@link com.tinkerpop.gremlin.structure.strategy.GraphStrategy}.  Primarily
@@ -127,10 +128,7 @@ public class RedisGraph implements Graph, Graph.Iterators {
             idValue = RedisHelper.getNextId(this);
         }*/
 
-        // TODO: Move the string constants out of the implementation, and maybe use a StringBuilder for performance
-        long id = jedis.incr("graph::" + Long.toString(graphId) + "::next_vertex_id");
-
-        final Vertex vertex = new RedisVertex(id, label, this);
+        final Vertex vertex = new RedisVertex(label, this);
 
         // TODO: Support vertex properties
         // ElementHelper.attachProperties(vertex, keyValues);
@@ -151,16 +149,30 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public String toString() {
-        // TODO: Add a more helpful string
         return StringFactory.graphString(this, "");
     }
 
     public void clear() {
-        // TODO clear the collections in Redis
+        for (Iterator<Edge> edges = edgeIterator(); edges.hasNext(); ) {
+            Edge e = edges.next();
+            e.remove();
+        }
+
+        for (Iterator<Vertex> vertices = vertexIterator(); vertices.hasNext(); ) {
+            Vertex v = vertices.next();
+            v.remove();
+        }
+
+        jedis.del("graph::" + String.valueOf(graphId) + "::next_vertex_id");
+        jedis.del("graph::" + String.valueOf(graphId) + "::next_edge_id");
+        jedis.del("graph::" + String.valueOf(graphId) + "::vertices");
+        jedis.del("graph::" + String.valueOf(graphId) + "::edges");
     }
 
     @Override
     public void close() {
+        clear();
+
         jedis.close();
     }
 
@@ -181,14 +193,34 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
-        // TODO
-        return null;
+        Set<String> ids = new HashSet<String>();
+
+        if (vertexIds.length == 0) {
+            Set<String> all = jedis.zrange("graph::" + String.valueOf(graphId) + "::vertices", 0, -1);
+            ids.addAll(all);
+        }
+        else {
+            for (Object id : vertexIds)
+                ids.add((String)id);
+        }
+
+        return new RedisVertexIterator(this, ids);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
-        // TODO
-        return null;
+        Set<String> ids = new HashSet<String>();
+
+        if (edgeIds.length == 0) {
+            Set<String> all = jedis.zrange("graph::" + String.valueOf(graphId) + "::edges", 0, -1);
+            ids.addAll(all);
+        }
+        else {
+            for (Object id : edgeIds)
+                ids.add((String)id);
+        }
+
+        return new RedisEdgeIterator(this, ids);
     }
 
     /**

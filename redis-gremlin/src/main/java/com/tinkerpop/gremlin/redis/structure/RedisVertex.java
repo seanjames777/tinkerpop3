@@ -2,48 +2,39 @@ package com.tinkerpop.gremlin.redis.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterators {
-
-    protected Map<String, Set<Edge>> outEdges = new HashMap<>();
-    protected Map<String, Set<Edge>> inEdges = new HashMap<>();
     private static final Object[] EMPTY_ARGS = new Object[0];
 
-    protected RedisVertex(final Object id, final String label, final RedisGraph graph) {
-        super(id, label, graph);
+    // Load vertex from database
+    protected RedisVertex(final Object id, final RedisGraph graph) {
+        super(id,
+                graph.getDatabase().get("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label"),
+                graph);
+    }
+
+    // Create new vertex
+    protected RedisVertex(final String label, final RedisGraph graph) {
+        super(graph.getDatabase().incr("graph::" + String.valueOf(graph.getId()) + "::next_vertex_id"),
+                label, graph);
+
+        graph.getDatabase().set("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
+        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::vertices", (Long)id, String.valueOf(id));
+
     }
 
     @Override
     public <V> VertexProperty<V> property(final String key) {
-        /*if (removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-
-        if (this.properties.containsKey(key)) {
-            final List<VertexProperty> list = (List) this.properties.get(key);
-            if (list.size() > 1)
-                throw Vertex.Exceptions.multiplePropertiesExistForProvidedKey(key);
-            else
-                return list.get(0);
-        } else*/
-
-        // TODO
         return VertexProperty.<V>empty();
     }
 
@@ -54,50 +45,22 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> VertexProperty<V> property(final String key, final V value, final Object... keyValues) {
-        /*
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
-        final Optional<Object> optionalId = ElementHelper.getIdValue(keyValues);
-
-        ElementHelper.validateProperty(key, value);
-        final VertexProperty<V> vertexProperty = optionalId.isPresent() ?
-                new RedisVertexProperty<V>(optionalId.get(), this, key, value) :
-                new RedisVertexProperty<V>(this, key, value);
-        final List<Property> list = this.properties.getOrDefault(key, new ArrayList<>());
-        list.add(vertexProperty);
-        this.properties.put(key, list);
-        ElementHelper.attachProperties(vertexProperty, keyValues);
-        return vertexProperty;*/
-
-        // TODO
         return VertexProperty.<V>empty();
     }
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
-        /*
-        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-        return RedisHelper.addEdge(this.graph, this, (RedisVertex) vertex, label, keyValues);
-        */
+        return new RedisEdge(vertex, label, this, (RedisGraph)graph());
 
-        // TODO
-        return null;
+        // TODO: Properties
     }
 
     @Override
     public void remove() {
-        /*
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-        final List<Edge> edges = new ArrayList<>();
-        this.iterators().edgeIterator(Direction.BOTH).forEachRemaining(edges::add);
-        edges.stream().filter(edge -> !((RedisEdge) edge).removed).forEach(Edge::remove);
-        this.properties.clear();
-        this.graph.vertices.remove(this.id);
-        this.removed = true;
-        */
-
-        // TODO
+        graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
+        graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_in");
+        graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out");
+        graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::vertices", String.valueOf(id));
     }
 
     @Override
@@ -119,15 +82,27 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public Iterator<Edge> edgeIterator(final Direction direction, final String... edgeLabels) {
-        // return (Iterator) RedisHelper.getEdges(this, direction, edgeLabels);
-        // TODO
-        return null;
+        Set<String> edges = new HashSet<String>();
+
+        if (edgeLabels.length == 0) {
+            // TODO: Probably wasteful, could just assign to edges
+            if (direction == Direction.IN || direction == Direction.BOTH)
+                edges.addAll(graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_in", 0, -1));
+
+            if (direction == Direction.OUT || direction == Direction.BOTH)
+                edges.addAll(graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out", 0, -1));
+        }
+        else {
+            // TODO: Need to look up by label
+            return null;
+        }
+
+        return new RedisEdgeIterator(graph, edges);
     }
 
     @Override
     public Iterator<Vertex> vertexIterator(final Direction direction, final String... edgeLabels) {
         // TODO
         return null;
-        //return (Iterator) RedisHelper.getVertices(this, direction, edgeLabels);
     }
 }
