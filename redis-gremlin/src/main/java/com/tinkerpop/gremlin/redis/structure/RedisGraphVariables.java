@@ -14,31 +14,41 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RedisGraphVariables implements Graph.Variables {
 
-    private final Map<String, Object> variables = new ConcurrentHashMap<>();
+    RedisGraph graph;
 
-    public RedisGraphVariables() {
-
+    public RedisGraphVariables(RedisGraph graph) {
+        this.graph = graph;
     }
 
     @Override
     public Set<String> keys() {
-        return this.variables.keySet();
+        return graph.getDatabase().hkeys("graph::" + String.valueOf(graph.getId()) + "::variables");
+    }
+
+    @Override
+    public Optional<String> get(final String key) {
+
     }
 
     @Override
     public <R> Optional<R> get(final String key) {
-        return Optional.ofNullable((R) this.variables.get(key));
+        // TODO: Jedis returns "a special 'nil' value" when the key is not found
+        // TODO: Decide how to store general "object" values
+
+        String value = graph.getDatabase().hget("graph::" + String.valueOf(graph.getId()) + "::variables", key);
+
+        return Optional.ofNullable((R)value);
     }
 
     @Override
     public void remove(final String key) {
-        this.variables.remove(key);
+        graph.getDatabase().hdel("graph::" + String.valueOf(graph.getId()) + "::variables", key);
     }
 
     @Override
     public void set(final String key, final Object value) {
         GraphVariableHelper.validateVariable(key, value);
-        this.variables.put(key, value);
+        graph.getDatabase().hset("graph::" + String.valueOf(graph.getId()) + "::variables", key, String.valueOf(value));
     }
 
     public String toString() {

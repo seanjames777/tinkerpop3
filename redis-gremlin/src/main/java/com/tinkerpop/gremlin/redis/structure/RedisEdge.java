@@ -32,6 +32,8 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
         graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out", String.valueOf(outVertex.id()));
         graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
 
+        graph.getDatabase().hset("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label, String.valueOf(id));
+
         graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(inVertex.id()) + "::edges_in", (Long)id, String.valueOf(id));
         graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(outVertex.id()) + "::edges_out", (Long)id, String.valueOf(id));
 
@@ -60,6 +62,8 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
         graph.getDatabase().zrem("vertex::" + String.valueOf(graph.getId()) + "::" + outVertex + "::edges_out", String.valueOf(id));
 
         graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::edges", String.valueOf(id));
+
+        graph.getDatabase().hdel("graph::"+ String.valueOf(graph.getId()) + "::edge_label_to_id", label);
     }
 
     @Override

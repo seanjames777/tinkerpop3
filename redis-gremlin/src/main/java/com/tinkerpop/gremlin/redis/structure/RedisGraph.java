@@ -47,6 +47,7 @@ public class RedisGraph implements Graph, Graph.Iterators {
     private static final String PORT_PROPERTY = "port";
 
     private long graphId = -1;
+    private RedisGraphVariables variables = new RedisGraphVariables(this);
 
     // TODO: These two methods should probably not be exposed publicly
     public long getId() {
@@ -143,8 +144,7 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Variables variables() {
-        // TODO: Implement graph variables
-        return null;
+        return variables;
     }
 
     @Override
@@ -167,6 +167,7 @@ public class RedisGraph implements Graph, Graph.Iterators {
         jedis.del("graph::" + String.valueOf(graphId) + "::next_edge_id");
         jedis.del("graph::" + String.valueOf(graphId) + "::vertices");
         jedis.del("graph::" + String.valueOf(graphId) + "::edges");
+        jedis.del("graph::" + String.valueOf(graphId) + "::variables");
     }
 
     @Override
@@ -223,6 +224,8 @@ public class RedisGraph implements Graph, Graph.Iterators {
         return new RedisEdgeIterator(this, ids);
     }
 
+    // TODO: Finish filling out the features below
+
     /**
      * Return RedisGraph feature set.
      * <p/>
@@ -270,6 +273,16 @@ public class RedisGraph implements Graph, Graph.Iterators {
         public boolean supportsCustomIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsUserSuppliedIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsAnyIds() {
+            return false;
+        }
     }
 
     public static class RedisGraphEdgeFeatures implements Features.EdgeFeatures {
@@ -279,6 +292,16 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
         @Override
         public boolean supportsCustomIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsUserSuppliedIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsAnyIds() {
             return false;
         }
     }

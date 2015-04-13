@@ -5,10 +5,9 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -93,8 +92,12 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
                 edges.addAll(graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out", 0, -1));
         }
         else {
-            // TODO: Need to look up by label
-            return null;
+            // Reverse lookup from edge labels to edge IDs
+            for (int i = 0; i < edgeLabels.length; i++) {
+                String label = edgeLabels[i];
+                String id = graph.getDatabase().hget("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label);
+                edges.add(id);
+            }
         }
 
         return new RedisEdgeIterator(graph, edges);
@@ -102,7 +105,24 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public Iterator<Vertex> vertexIterator(final Direction direction, final String... edgeLabels) {
-        // TODO
-        return null;
+        List<Vertex> adjacent = new ArrayList<Vertex>();
+
+        Iterator<Edge> edgeIt = edgeIterator(direction, edgeLabels);
+
+        while (edgeIt.hasNext()) {
+            Edge edge = edgeIt.next();
+
+            // TODO: Figure out which direction to ask for to get only the adjacent vertex
+            Iterator<Vertex> vertIt = edge.iterators().vertexIterator(Direction.BOTH);
+
+            while (vertIt.hasNext()) {
+                Vertex v = vertIt.next();
+
+                if (v.id() != id())
+                    adjacent.add(v);
+            }
+        }
+
+        return adjacent.iterator();
     }
 }
