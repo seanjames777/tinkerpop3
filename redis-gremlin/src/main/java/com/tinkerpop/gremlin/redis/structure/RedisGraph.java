@@ -1,10 +1,7 @@
 package com.tinkerpop.gremlin.redis.structure;
 
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Transaction;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -280,9 +277,24 @@ public class RedisGraph implements Graph, Graph.Iterators {
         }
 
         @Override
+        public boolean supportsStringIds() { return false; }
+
+        @Override
+        public boolean supportsUuidIds() { return false; }
+
+        @Override
         public boolean supportsAnyIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsMultiProperties() { return false; }
+
+        @Override
+        public boolean supportsMetaProperties() { return false; }
+
+        @Override
+        public Features.VertexPropertyFeatures properties() { return RedisGraphVertexPropertyFeatures.INSTANCE; }
     }
 
     public static class RedisGraphEdgeFeatures implements Features.EdgeFeatures {
@@ -301,9 +313,18 @@ public class RedisGraph implements Graph, Graph.Iterators {
         }
 
         @Override
+        public boolean supportsStringIds() { return false; }
+
+        @Override
+        public boolean supportsUuidIds() { return false; }
+
+        @Override
         public boolean supportsAnyIds() {
             return false;
         }
+
+        @Override
+        public Features.EdgePropertyFeatures properties() { return RedisGraphEdgePropertyFeatures.INSTANCE; }
     }
 
     public static class RedisGraphGraphFeatures implements Features.GraphFeatures {
@@ -328,5 +349,103 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
         @Override
         public boolean supportsComputer() { return false; }
+
+        @Override
+        public Features.VariableFeatures variables() { return RedisGraphVariableFeatures.INSTANCE; }
+    }
+
+    public static class RedisGraphDataTypeFeatures implements Features.DataTypeFeatures {
+        private RedisGraphDataTypeFeatures() {}
+
+        @Override
+        public boolean supportsBooleanValues() { return false; }
+
+        @Override
+        public boolean supportsByteValues() { return false; }
+
+        @Override
+        public boolean supportsDoubleValues() { return false; }
+
+        @Override
+        public boolean supportsFloatValues() { return false; }
+
+        @Override
+        public boolean supportsIntegerValues() { return false; }
+
+        @Override
+        public boolean supportsLongValues() { return false; }
+
+        @Override
+        public boolean supportsMapValues() { return false; }
+
+        @Override
+        public boolean supportsMixedListValues() { return false; }
+
+        @Override
+        public boolean supportsBooleanArrayValues() { return false; }
+
+        @Override
+        public boolean supportsByteArrayValues() { return false; }
+
+        @Override
+        public boolean supportsDoubleArrayValues() { return false; }
+
+        @Override
+        public boolean supportsFloatArrayValues() { return false; }
+
+        @Override
+        public boolean supportsIntegerArrayValues() { return false; }
+
+        @Override
+        public boolean supportsStringArrayValues() { return false; }
+
+        @Override
+        public boolean supportsLongArrayValues() { return false; }
+
+        @Override
+        public boolean supportsSerializableValues() { return false; }
+
+        @Override
+        public boolean supportsStringValues() { return true; }
+
+        @Override
+        public boolean supportsUniformListValues() { return false; }
+    }
+
+    public static class RedisGraphVariableFeatures extends RedisGraphDataTypeFeatures implements Features.VariableFeatures {
+        static final RedisGraphVariableFeatures INSTANCE = new RedisGraphVariableFeatures();
+
+        private RedisGraphVariableFeatures() {}
+    }
+
+    public static class RedisGraphVertexPropertyFeatures extends RedisGraphDataTypeFeatures implements Features.VertexPropertyFeatures {
+        static final RedisGraphVertexPropertyFeatures INSTANCE = new RedisGraphVertexPropertyFeatures();
+
+        private RedisGraphVertexPropertyFeatures() {}
+
+        // TODO: Make sure these are right
+        @Override
+        public boolean supportsUserSuppliedIds() { return false; }
+
+        @Override
+        public boolean supportsNumericIds() { return true; }
+
+        @Override
+        public boolean supportsStringIds() { return false; }
+
+        @Override
+        public boolean supportsUuidIds() { return false; }
+
+        @Override
+        public boolean supportsCustomIds() { return false; }
+
+        @Override
+        public boolean supportsAnyIds() { return false; }
+    }
+
+    public static class RedisGraphEdgePropertyFeatures extends RedisGraphDataTypeFeatures implements Features.EdgePropertyFeatures {
+        static final RedisGraphEdgePropertyFeatures INSTANCE = new RedisGraphEdgePropertyFeatures();
+
+        private RedisGraphEdgePropertyFeatures() {}
     }
 }
