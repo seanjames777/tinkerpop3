@@ -422,7 +422,7 @@ public class RedisGraph implements Graph, Graph.Iterators {
         static final RedisGraphVertexPropertyFeatures INSTANCE = new RedisGraphVertexPropertyFeatures();
 
         private RedisGraphVertexPropertyFeatures() {}
-        
+
         @Override
         public boolean supportsUserSuppliedIds() { return false; }
 

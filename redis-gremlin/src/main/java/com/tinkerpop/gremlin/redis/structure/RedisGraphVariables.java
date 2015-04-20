@@ -26,11 +26,6 @@ public class RedisGraphVariables implements Graph.Variables {
     }
 
     @Override
-    public Optional<String> get(final String key) {
-
-    }
-
-    @Override
     public <R> Optional<R> get(final String key) {
         // TODO: Jedis returns "a special 'nil' value" when the key is not found
         // TODO: Decide how to store general "object" values
