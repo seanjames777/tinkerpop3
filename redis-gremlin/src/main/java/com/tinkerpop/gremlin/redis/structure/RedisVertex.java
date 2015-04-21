@@ -47,6 +47,9 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
         ElementHelper.validateProperty(key, value);
 
+        if (!(value instanceof String))
+            throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+
         RedisVertexProperty prop = new RedisVertexProperty(this, key, value);
 
         graph.getDatabase().hset("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",

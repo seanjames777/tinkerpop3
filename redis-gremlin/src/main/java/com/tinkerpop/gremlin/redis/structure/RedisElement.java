@@ -67,7 +67,15 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
 
-        return new RedisProperty(this, key, value);
+        if (!(value instanceof String))
+            throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+
+        RedisProperty prop = new RedisProperty(this, key, value);
+
+        if (!prop.isPresent())
+            return Property.<V>empty();
+
+        return prop;
     }
 
     @Override
