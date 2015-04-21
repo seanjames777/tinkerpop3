@@ -181,15 +181,17 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
-        Set<String> ids = new HashSet<String>();
+        Set<Long> ids = new HashSet<Long>();
 
         if (vertexIds.length == 0) {
             Set<String> all = jedis.zrange("graph::" + String.valueOf(graphId) + "::vertices", 0, -1);
-            ids.addAll(all);
+
+            for (String id : all)
+                ids.add(Long.valueOf(id));
         }
         else {
             for (Object id : vertexIds)
-                ids.add((String)id);
+                ids.add((Long)id);
         }
 
         return new RedisVertexIterator(this, ids);
@@ -197,15 +199,17 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
-        Set<String> ids = new HashSet<String>();
+        Set<Long> ids = new HashSet<Long>();
 
         if (edgeIds.length == 0) {
             Set<String> all = jedis.zrange("graph::" + String.valueOf(graphId) + "::edges", 0, -1);
-            ids.addAll(all);
+
+            for (String id : all)
+                ids.add(Long.valueOf(id));
         }
         else {
             for (Object id : edgeIds)
-                ids.add((String)id);
+                ids.add((Long)id);
         }
 
         return new RedisEdgeIterator(this, ids);

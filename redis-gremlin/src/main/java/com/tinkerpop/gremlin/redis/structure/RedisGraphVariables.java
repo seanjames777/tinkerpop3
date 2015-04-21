@@ -1,6 +1,7 @@
 package com.tinkerpop.gremlin.redis.structure;
 
 import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.util.GraphVariableHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
@@ -43,6 +44,10 @@ public class RedisGraphVariables implements Graph.Variables {
     @Override
     public void set(final String key, final Object value) {
         GraphVariableHelper.validateVariable(key, value);
+
+        if (!(value instanceof String))
+            throw Graph.Variables.Exceptions.dataTypeOfVariableValueNotSupported(value);
+
         graph.getDatabase().hset("graph::" + String.valueOf(graph.getId()) + "::variables", key, String.valueOf(value));
     }
 

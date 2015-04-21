@@ -15,9 +15,9 @@ public class RedisVertexIterator implements Iterator<Vertex> {
     List<Vertex> vertices = new ArrayList<Vertex>();
     int currIdx = 0;
 
-    public RedisVertexIterator(RedisGraph graph, Set<String> edgeIds) {
+    public RedisVertexIterator(RedisGraph graph, Set<Long> edgeIds) {
         // TODO: Array list might be slow
-        for (String id : edgeIds) {
+        for (Long id : edgeIds) {
             Vertex vertex = new RedisVertex(id, graph);
             vertices.add(vertex);
         }

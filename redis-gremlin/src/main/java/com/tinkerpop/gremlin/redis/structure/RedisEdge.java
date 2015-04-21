@@ -14,7 +14,7 @@ import java.util.Iterator;
 public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
     // Load edge from database
-    protected RedisEdge(final Object id, final RedisGraph graph) {
+    protected RedisEdge(final Long id, final RedisGraph graph) {
         super(id, graph);
     }
 
@@ -30,7 +30,7 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
         graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(inVertex.id()) + "::edges_in", (Long)id, String.valueOf(id));
         graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(outVertex.id()) + "::edges_out", (Long) id, String.valueOf(id));
 
-        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::edges", (Long) id, String.valueOf(id));
+        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::edges", id, String.valueOf(id));
     }
 
     @Override
@@ -74,14 +74,14 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
         switch (direction) {
             case OUT:
-                outVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out"), graph);
+                outVertex = new RedisVertex(Long.valueOf(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out")), graph);
                 return IteratorUtils.of(outVertex);
             case IN:
-                inVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in"), graph);
+                inVertex = new RedisVertex(Long.valueOf(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in")), graph);
                 return IteratorUtils.of(inVertex);
             default:
-                outVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out"), graph);
-                inVertex = new RedisVertex(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in"), graph);
+                outVertex = new RedisVertex(Long.valueOf(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out")), graph);
+                inVertex = new RedisVertex(Long.valueOf(graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in")), graph);
                 return IteratorUtils.of(outVertex, inVertex);
         }
     }

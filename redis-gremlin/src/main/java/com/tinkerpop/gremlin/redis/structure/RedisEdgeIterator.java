@@ -15,9 +15,9 @@ public class RedisEdgeIterator implements Iterator<Edge> {
     List<Edge> edges = new ArrayList<Edge>();
     int currIdx = 0;
 
-    public RedisEdgeIterator(RedisGraph graph, Set<String> edgeIds) {
+    public RedisEdgeIterator(RedisGraph graph, Set<Long> edgeIds) {
         // TODO: Array list might be slow
-        for (String id : edgeIds) {
+        for (Long id : edgeIds) {
             Edge edge = new RedisEdge(id, graph);
             edges.add(edge);
         }

@@ -32,7 +32,7 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
         ElementHelper.attachProperties(this, propertyKeyValues);
     }
 
-    public RedisVertexProperty(final Object id, final RedisVertex vertex, final String key) {
+    public RedisVertexProperty(final Long id, final RedisVertex vertex, final String key) {
         super(id, vertex.graph);
 
         this.vertex = vertex;
@@ -48,6 +48,10 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
 
         graph.getDatabase().hdel("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(vertex.id()) + "::properties",
                 key);
+    }
+
+    public String toString() {
+        return StringFactory.propertyString(this);
     }
 
     @Override

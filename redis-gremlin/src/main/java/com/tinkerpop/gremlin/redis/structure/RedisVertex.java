@@ -14,12 +14,12 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
     private static final Object[] EMPTY_ARGS = new Object[0];
 
     // Load vertex from database
-    protected RedisVertex(final Object id, final RedisGraph graph) {
+    protected RedisVertex(final Long id, final RedisGraph graph) {
         super(id, graph);
     }
 
     // Create new vertex
-    private RedisVertex(final String label, final RedisGraph graph) {
+    protected RedisVertex(final String label, final RedisGraph graph) {
         super(label, graph);
 
         graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::vertices", (Long) id, String.valueOf(id));
@@ -118,22 +118,31 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public Iterator<Edge> edgeIterator(final Direction direction, final String... edgeLabels) {
-        Set<String> edges = new HashSet<String>();
+        Set<Long> edges = new HashSet<Long>();
 
         if (edgeLabels.length == 0) {
             // TODO: Probably wasteful, could just assign to edges
-            if (direction == Direction.IN || direction == Direction.BOTH)
-                edges.addAll(graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_in", 0, -1));
+            if (direction == Direction.IN || direction == Direction.BOTH) {
+                Set<String> ids = graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_in", 0, -1);
 
-            if (direction == Direction.OUT || direction == Direction.BOTH)
-                edges.addAll(graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out", 0, -1));
+                for (String id : ids)
+                    edges.add(Long.valueOf(id));
+            }
+
+            if (direction == Direction.OUT || direction == Direction.BOTH) {
+                Set<String> ids = graph.getDatabase().zrange("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out", 0, -1);
+
+                for (String id : ids)
+                    edges.add(Long.valueOf(id));
+            }
         }
         else {
             // Reverse lookup from edge labels to edge IDs
             for (int i = 0; i < edgeLabels.length; i++) {
                 String label = edgeLabels[i];
                 String id = graph.getDatabase().hget("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label);
-                edges.add(id);
+
+                edges.add(Long.valueOf(id));
             }
         }
 

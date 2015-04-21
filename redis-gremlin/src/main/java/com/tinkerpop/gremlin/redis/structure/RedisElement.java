@@ -14,11 +14,11 @@ import java.util.stream.Collectors;
  */
 public abstract class RedisElement implements Element, Element.Iterators {
 
-    protected final Object id;
+    protected final Long id;
     protected final RedisGraph graph;
     protected boolean removed = false;
 
-    protected RedisElement(final Object id, final RedisGraph graph) {
+    protected RedisElement(final Long id, final RedisGraph graph) {
         this.graph = graph;
         this.id = id;
     }
