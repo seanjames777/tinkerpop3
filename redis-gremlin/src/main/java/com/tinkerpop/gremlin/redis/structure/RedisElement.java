@@ -63,6 +63,10 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
     @Override
     public <V> Property<V> property(String key, final V value) {
+        ElementHelper.validateProperty(key, value);
+
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+
         return new RedisProperty(this, key, value);
     }
 

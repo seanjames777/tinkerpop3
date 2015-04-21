@@ -42,6 +42,7 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
     @Override
     public void remove() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(VertexProperty.class, id);
+        this.removed = true;
 
         super.remove();
 

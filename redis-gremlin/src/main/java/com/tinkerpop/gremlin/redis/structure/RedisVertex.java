@@ -59,8 +59,13 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
     public <V> VertexProperty<V> property(String key) {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
 
-        Long prop_id = Long.valueOf(graph.getDatabase().hget("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",
-                key));
+        String id_str = graph.getDatabase().hget("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",
+                key);
+
+        if (id_str == null)
+            return VertexProperty.<V>empty();
+
+        Long prop_id = Long.valueOf(id_str);
 
         return new RedisVertexProperty(prop_id, this, key);
     }
@@ -68,6 +73,7 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
     @Override
     public void remove() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
+        this.removed = true;
 
         super.remove();
 

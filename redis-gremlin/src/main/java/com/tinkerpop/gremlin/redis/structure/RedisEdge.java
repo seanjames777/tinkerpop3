@@ -36,6 +36,7 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
     @Override
     public void remove() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, id);
+        this.removed = true;
 
         String label = label();
 
