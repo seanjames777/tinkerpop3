@@ -14,6 +14,7 @@ public class RedisProperty<V> implements Property<V> {
     protected final Element element;
     protected final String key;
     protected final RedisGraph graph;
+    protected boolean removed = false;
 
     // Create new property
     public RedisProperty(final Element element, final String key, final V value) {
@@ -67,6 +68,11 @@ public class RedisProperty<V> implements Property<V> {
 
     @Override
     public void remove() {
+        if (removed)
+            return;
+
+        removed = true;
+
         graph.getDatabase().hdel("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(element.id()) + "::properties",
                 key);
     }

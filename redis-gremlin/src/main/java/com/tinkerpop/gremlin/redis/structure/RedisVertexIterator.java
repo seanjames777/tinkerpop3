@@ -1,5 +1,6 @@
 package com.tinkerpop.gremlin.redis.structure;
 
+        import com.tinkerpop.gremlin.structure.Graph;
         import com.tinkerpop.gremlin.structure.Vertex;
 
         import java.util.ArrayList;
@@ -18,7 +19,11 @@ public class RedisVertexIterator implements Iterator<Vertex> {
     public RedisVertexIterator(RedisGraph graph, Set<Long> edgeIds) {
         // TODO: Array list might be slow
         for (Long id : edgeIds) {
-            Vertex vertex = new RedisVertex(id, graph);
+            RedisVertex vertex = new RedisVertex(id, graph);
+
+            if (!vertex.exists)
+                throw Graph.Exceptions.elementNotFound(Vertex.class, id);
+
             vertices.add(vertex);
         }
     }

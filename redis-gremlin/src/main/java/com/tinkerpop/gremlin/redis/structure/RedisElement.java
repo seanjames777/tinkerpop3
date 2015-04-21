@@ -17,10 +17,16 @@ public abstract class RedisElement implements Element, Element.Iterators {
     protected final Long id;
     protected final RedisGraph graph;
     protected boolean removed = false;
+    protected boolean exists = true;
 
     protected RedisElement(final Long id, final RedisGraph graph) {
         this.graph = graph;
         this.id = id;
+
+        String shouldHaveId = graph.getDatabase().get("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::id");
+
+        if (shouldHaveId == null)
+            exists = false;
     }
 
     protected RedisElement(final String label, final RedisGraph graph) {
@@ -28,12 +34,14 @@ public abstract class RedisElement implements Element, Element.Iterators {
         this.graph = graph;
 
         graph.getDatabase().set("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
+        graph.getDatabase().set("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::id", String.valueOf(id));
     }
 
     @Override
     public void remove() {
         graph.getDatabase().del("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
         graph.getDatabase().del("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::properties");
+        graph.getDatabase().del("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::id");
     }
 
     @Override
@@ -80,7 +88,14 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
     @Override
     public <V> Property<V> property(final String key) {
-        return new RedisProperty(this, key);
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+
+        RedisProperty<V> property = new RedisProperty<V>(this, key);
+
+        if (!property.isPresent())
+            return Property.<V>empty();
+
+        return property;
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
@@ -93,6 +108,8 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
     @Override
     public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+
         Set<String> keys = new HashSet<String>();
 
         if (propertyKeys.length == 0) {

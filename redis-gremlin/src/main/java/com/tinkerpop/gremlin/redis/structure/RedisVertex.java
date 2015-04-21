@@ -29,14 +29,15 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
+
         ElementHelper.validateLabel(label);
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
 
         Edge edge = new RedisEdge(vertex, label, this, (RedisGraph)graph());
 
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
         ElementHelper.attachProperties(edge, keyValues);
 
         return edge;
@@ -103,6 +104,8 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+
         Set<String> keys = new HashSet<String>();
 
         if (propertyKeys.length == 0) {
@@ -158,8 +161,7 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
         while (edgeIt.hasNext()) {
             Edge edge = edgeIt.next();
 
-            // TODO: Figure out which direction to ask for to get only the adjacent vertex
-            Iterator<Vertex> vertIt = edge.iterators().vertexIterator(Direction.BOTH);
+            Iterator<Vertex> vertIt = edge.iterators().vertexIterator(direction);
 
             while (vertIt.hasNext()) {
                 Vertex v = vertIt.next();

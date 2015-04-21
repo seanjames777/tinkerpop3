@@ -1,6 +1,7 @@
 package com.tinkerpop.gremlin.redis.structure;
 
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Graph;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -18,7 +19,11 @@ public class RedisEdgeIterator implements Iterator<Edge> {
     public RedisEdgeIterator(RedisGraph graph, Set<Long> edgeIds) {
         // TODO: Array list might be slow
         for (Long id : edgeIds) {
-            Edge edge = new RedisEdge(id, graph);
+            RedisEdge edge = new RedisEdge(id, graph);
+
+            if (!edge.exists)
+                throw Graph.Exceptions.elementNotFound(Edge.class, id);
+
             edges.add(edge);
         }
     }
