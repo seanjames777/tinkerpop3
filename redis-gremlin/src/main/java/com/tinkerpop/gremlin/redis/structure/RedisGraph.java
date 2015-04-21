@@ -160,11 +160,11 @@ public class RedisGraph implements Graph, Graph.Iterators {
             v.remove();
         }
 
-        jedis.del("graph::" + String.valueOf(graphId) + "::next_vertex_id");
-        jedis.del("graph::" + String.valueOf(graphId) + "::next_edge_id");
+        jedis.del("graph::" + String.valueOf(graphId) + "::next_element_id");
         jedis.del("graph::" + String.valueOf(graphId) + "::vertices");
         jedis.del("graph::" + String.valueOf(graphId) + "::edges");
         jedis.del("graph::" + String.valueOf(graphId) + "::variables");
+        jedis.del("graph::" + String.valueOf(graphId) + "::edge_label_to_id");
     }
 
     @Override
@@ -291,7 +291,7 @@ public class RedisGraph implements Graph, Graph.Iterators {
         public boolean supportsMultiProperties() { return false; }
 
         @Override
-        public boolean supportsMetaProperties() { return false; }
+        public boolean supportsMetaProperties() { return true; }
 
         @Override
         public Features.VertexPropertyFeatures properties() { return RedisGraphVertexPropertyFeatures.INSTANCE; }

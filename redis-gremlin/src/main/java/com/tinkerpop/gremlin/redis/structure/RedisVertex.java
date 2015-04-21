@@ -1,9 +1,7 @@
 package com.tinkerpop.gremlin.redis.structure;
 
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
+import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -17,49 +15,52 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     // Load vertex from database
     protected RedisVertex(final Object id, final RedisGraph graph) {
-        super(id,
-                graph.getDatabase().get("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label"),
-                graph);
+        super(id, graph);
     }
 
     // Create new vertex
-    protected RedisVertex(final String label, final RedisGraph graph) {
-        super(graph.getDatabase().incr("graph::" + String.valueOf(graph.getId()) + "::next_vertex_id"),
-                label, graph);
+    private RedisVertex(final String label, final RedisGraph graph) {
+        super(label, graph);
 
-        graph.getDatabase().set("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
-        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::vertices", (Long)id, String.valueOf(id));
-
-    }
-
-    @Override
-    public <V> VertexProperty<V> property(final String key) {
-        return VertexProperty.<V>empty();
-    }
-
-    @Override
-    public <V> VertexProperty<V> property(final String key, final V value) {
-        return this.property(key, value, EMPTY_ARGS);
-    }
-
-    @Override
-    public <V> VertexProperty<V> property(final String key, final V value, final Object... keyValues) {
-        return VertexProperty.<V>empty();
+        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::vertices", (Long) id, String.valueOf(id));
     }
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
-        return new RedisEdge(vertex, label, this, (RedisGraph)graph());
+        Edge edge = new RedisEdge(vertex, label, this, (RedisGraph)graph());
 
-        // TODO: Properties
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        ElementHelper.attachProperties(edge, keyValues);
+
+        return edge;
+    }
+
+    @Override
+    public <V> VertexProperty<V> property(String key, final V value) {
+        RedisVertexProperty prop = new RedisVertexProperty(this, key, value);
+
+        graph.getDatabase().hset("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",
+                key, String.valueOf(prop.id()));
+
+        return prop;
+    }
+
+    @Override
+    public <V> VertexProperty<V> property(String key) {
+        Long prop_id = Long.valueOf(graph.getDatabase().hget("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",
+                key));
+
+        return new RedisVertexProperty(prop_id, this, key);
     }
 
     @Override
     public void remove() {
-        graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
         graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_in");
         graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out");
         graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::vertices", String.valueOf(id));
+        graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id");
+
+        super.remove();
     }
 
     @Override
@@ -76,7 +77,17 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
-        return (Iterator) super.propertyIterator(propertyKeys);
+        Set<String> keys = new HashSet<String>();
+
+        if (propertyKeys.length == 0) {
+            keys = graph.getDatabase().hkeys("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::properties");
+        }
+        else {
+            for (int i = 0; i < propertyKeys.length; i++)
+                keys.add(propertyKeys[i]);
+        }
+
+        return new RedisVertexPropertyIterator<V>(graph, this, keys);
     }
 
     @Override

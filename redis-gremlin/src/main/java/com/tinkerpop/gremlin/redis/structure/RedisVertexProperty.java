@@ -1,5 +1,6 @@
 package com.tinkerpop.gremlin.redis.structure;
 
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
@@ -17,64 +18,22 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
 
     private final RedisVertex vertex;
     private final String key;
-    private final V value;
 
-    public RedisVertexProperty(final RedisVertex vertex, final String key, final V value, final Object... propertyKeyValues) {
-        super(
-                -1, // TODO get next ID from redis
-                key, vertex.graph);
+    public RedisVertexProperty(final RedisVertex vertex, final String key, final Object... propertyKeyValues) {
+        super(key, vertex.graph);
 
         this.vertex = vertex;
         this.key = key;
-        this.value = value;
+
         ElementHelper.legalPropertyKeyValueArray(propertyKeyValues);
         ElementHelper.attachProperties(this, propertyKeyValues);
     }
 
-    public RedisVertexProperty(final Object id, final RedisVertex vertex, final String key, final V value, final Object... propertyKeyValues) {
-        super(id, key, vertex.graph);
+    public RedisVertexProperty(final Object id, final RedisVertex vertex, final String key) {
+        super(id, vertex.graph);
+
         this.vertex = vertex;
         this.key = key;
-        this.value = value;
-        ElementHelper.legalPropertyKeyValueArray(propertyKeyValues);
-        ElementHelper.attachProperties(this, propertyKeyValues);
-    }
-
-    @Override
-    public String key() {
-        return this.key;
-    }
-
-    @Override
-    public V value() {
-        return this.value;
-    }
-
-    @Override
-    public boolean isPresent() {
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return StringFactory.propertyString(this);
-    }
-
-    @Override
-    public Object id() {
-        return this.id;
-    }
-
-    @Override
-    public boolean equals(final Object object) {
-        return ElementHelper.areEqual(this, object);
-    }
-
-    @Override
-    public <U> Property<U> property(final String key, final U value) {
-        final Property<U> property = new RedisProperty<U>(this, key, value);
-        this.properties.put(key, Collections.singletonList(property));
-        return property;
     }
 
     @Override
@@ -83,30 +42,28 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
     }
 
     @Override
-    public void remove() {
-        if (this.vertex.properties.containsKey(this.key)) {
-            this.vertex.properties.get(this.key).remove(this);
-            if (this.vertex.properties.get(this.key).size() == 0) {
-                this.vertex.properties.remove(this.key);
-            }
-            final AtomicBoolean delete = new AtomicBoolean(true);
-            this.vertex.propertyIterator(this.key).forEachRemaining(property -> {
-                if (property.value().equals(this.value))
-                    delete.set(false);
-            });
-            this.properties.clear();
-            this.removed = true;
-        }
+    public V value() {
+        return (V)graph.getDatabase().hget("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(vertex.id()) + "::properties",
+                key);
     }
 
-    //////////////////////////////////////////////
-
+    @Override
     public VertexProperty.Iterators iterators() {
         return this;
     }
 
     @Override
-    public <U> Iterator<Property<U>> propertyIterator(final String... propertyKeys) {
+    public String key() {
+        return this.key;
+    }
+
+    @Override
+    public boolean isPresent() {
+        return value() != null;
+    }
+
+    @Override
+    public <V> Iterator<Property<V>> propertyIterator(final String... propertyKeys) {
         return (Iterator) super.propertyIterator(propertyKeys);
     }
 }

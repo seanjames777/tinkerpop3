@@ -18,42 +18,28 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
     // Load edge from database
     protected RedisEdge(final Object id, final RedisGraph graph) {
-        super(id,
-                graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label"),
-                graph);
+        super(id, graph);
     }
 
     // Create new edge
     protected RedisEdge(final Vertex outVertex, final String label, final Vertex inVertex, final RedisGraph graph) {
-        super(graph.getDatabase().incr("graph::" + String.valueOf(graph.getId()) + "::next_edge_id"),
-                label, graph);
+        super(label, graph);
 
         graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in", String.valueOf(inVertex.id()));
         graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out", String.valueOf(outVertex.id()));
-        graph.getDatabase().set("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
 
         graph.getDatabase().hset("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label, String.valueOf(id));
 
         graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(inVertex.id()) + "::edges_in", (Long)id, String.valueOf(id));
-        graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(outVertex.id()) + "::edges_out", (Long)id, String.valueOf(id));
+        graph.getDatabase().zadd("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(outVertex.id()) + "::edges_out", (Long) id, String.valueOf(id));
 
-        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::edges", (Long)id, String.valueOf(id));
-    }
-
-    @Override
-    public <V> Property<V> property(final String key, final V value) {
-        ElementHelper.validateProperty(key, value);
-        final Property oldProperty = super.property(key);
-        final Property<V> newProperty = new RedisProperty<>(this, key, value);
-        this.properties.put(key, Collections.singletonList(newProperty));
-        return newProperty;
+        graph.getDatabase().zadd("graph::" + String.valueOf(graph.getId()) + "::edges", (Long) id, String.valueOf(id));
     }
 
     @Override
     public void remove() {
         graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in");
         graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out");
-        graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
 
         String inVertex = graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in");
         String outVertex = graph.getDatabase().get("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out");
@@ -63,7 +49,9 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
         graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::edges", String.valueOf(id));
 
-        graph.getDatabase().hdel("graph::"+ String.valueOf(graph.getId()) + "::edge_label_to_id", label);
+        graph.getDatabase().del("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label());
+
+        super.remove();
     }
 
     @Override

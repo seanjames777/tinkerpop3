@@ -13,13 +13,22 @@ public class RedisProperty<V> implements Property<V> {
 
     protected final Element element;
     protected final String key;
-    protected V value;
     protected final RedisGraph graph;
 
+    // Create new property
     public RedisProperty(final Element element, final String key, final V value) {
         this.element = element;
         this.key = key;
-        this.value = value;
+        this.graph = ((RedisElement) this.element).graph;
+
+        graph.getDatabase().hset("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(element.id()) + "::properties",
+            key, (String)value);
+    }
+
+    // Lookup property
+    public RedisProperty(final Element element, final String key) {
+        this.element = element;
+        this.key = key;
         this.graph = ((RedisElement) this.element).graph;
     }
 
@@ -35,12 +44,13 @@ public class RedisProperty<V> implements Property<V> {
 
     @Override
     public V value() {
-        return this.value;
+        return (V)graph.getDatabase().hget("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(element.id()) + "::properties",
+                key);
     }
 
     @Override
     public boolean isPresent() {
-        return null != this.value;
+        return value() != null;
     }
 
     public String toString() {
@@ -57,6 +67,7 @@ public class RedisProperty<V> implements Property<V> {
 
     @Override
     public void remove() {
-        ((RedisElement) this.element).properties.remove(this.key);
+        graph.getDatabase().hdel("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(element.id()) + "::properties",
+                key);
     }
 }

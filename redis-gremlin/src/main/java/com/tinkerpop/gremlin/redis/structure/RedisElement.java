@@ -6,13 +6,7 @@ import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -20,17 +14,26 @@ import java.util.stream.Collectors;
  */
 public abstract class RedisElement implements Element, Element.Iterators {
 
-    protected Map<String, List <Property>> properties = new HashMap<>();
-
     protected final Object id;
-    protected final String label;
     protected final RedisGraph graph;
     protected boolean removed = false;
 
-    protected RedisElement(final Object id, final String label, final RedisGraph graph) {
+    protected RedisElement(final Object id, final RedisGraph graph) {
         this.graph = graph;
         this.id = id;
-        this.label = label;
+    }
+
+    protected RedisElement(final String label, final RedisGraph graph) {
+        this.id = graph.getDatabase().incr("graph::" + String.valueOf(graph.getId()) + "::next_element_id");
+        this.graph = graph;
+
+        graph.getDatabase().set("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label", label);
+    }
+
+    @Override
+    public void remove() {
+        graph.getDatabase().del("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
+        graph.getDatabase().del("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::properties");
     }
 
     @Override
@@ -45,7 +48,7 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
     @Override
     public String label() {
-        return this.label;
+        return graph.getDatabase().get("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::label");
     }
 
     @Override
@@ -55,14 +58,17 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
     @Override
     public Set<String> keys() {
-        return this.properties.keySet();
+        return graph.getDatabase().hkeys("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::properties");
+    }
+
+    @Override
+    public <V> Property<V> property(String key, final V value) {
+        return new RedisProperty(this, key, value);
     }
 
     @Override
     public <V> Property<V> property(final String key) {
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id);
-
-        return this.properties.containsKey(key) ? this.properties.get(key).get(0) : Property.<V>empty();
+        return new RedisProperty(this, key);
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
@@ -75,16 +81,16 @@ public abstract class RedisElement implements Element, Element.Iterators {
 
     @Override
     public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
-        if (propertyKeys.length == 1) {
-            final List<Property> properties = this.properties.getOrDefault(propertyKeys[0], Collections.emptyList());
-            if (properties.size() == 1) {
-                return IteratorUtils.of(properties.get(0));
-            } else if (properties.isEmpty()) {
-                return Collections.emptyIterator();
-            } else {
-                return (Iterator) new ArrayList<>(properties).iterator();
-            }
-        } else
-            return (Iterator) this.properties.entrySet().stream().filter(entry -> ElementHelper.keyExists(entry.getKey(), propertyKeys)).flatMap(entry -> entry.getValue().stream()).collect(Collectors.toList()).iterator();
+        Set<String> keys = new HashSet<String>();
+
+        if (propertyKeys.length == 0) {
+            keys = graph.getDatabase().hkeys("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::properties");
+        }
+        else {
+            for (int i = 0; i < propertyKeys.length; i++)
+                keys.add(propertyKeys[i]);
+        }
+
+        return new RedisPropertyIterator<V>(graph, this, keys);
     }
 }

@@ -1,11 +1,11 @@
 package com.tinkerpop.gremlin.redis.structure;
 
-import com.tinkerpop.gremlin.structure.Vertex;
+        import com.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+        import java.util.ArrayList;
+        import java.util.Iterator;
+        import java.util.List;
+        import java.util.Set;
 
 /**
  * Created by Sean on 4/11/15.
