@@ -27,6 +27,13 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
+        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
+        ElementHelper.validateLabel(label);
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if (ElementHelper.getIdValue(keyValues).isPresent())
+            throw Edge.Exceptions.userSuppliedIdsNotSupported();
+
         Edge edge = new RedisEdge(vertex, label, this, (RedisGraph)graph());
 
         ElementHelper.legalPropertyKeyValueArray(keyValues);
@@ -37,6 +44,9 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> VertexProperty<V> property(String key, final V value) {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
+        ElementHelper.validateProperty(key, value);
+
         RedisVertexProperty prop = new RedisVertexProperty(this, key, value);
 
         graph.getDatabase().hset("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",
@@ -47,6 +57,8 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public <V> VertexProperty<V> property(String key) {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
+
         Long prop_id = Long.valueOf(graph.getDatabase().hget("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id",
                 key));
 
@@ -55,12 +67,17 @@ public class RedisVertex extends RedisElement implements Vertex, Vertex.Iterator
 
     @Override
     public void remove() {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, id);
+
+        super.remove();
+
+        // TODO: Remove properties
+        // TODO: Element also needs to remove properties
+
         graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_in");
         graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::edges_out");
         graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::vertices", String.valueOf(id));
         graph.getDatabase().del("vertex::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::property_key_to_id");
-
-        super.remove();
     }
 
     @Override

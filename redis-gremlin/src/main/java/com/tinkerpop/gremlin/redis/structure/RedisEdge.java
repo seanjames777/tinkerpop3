@@ -1,9 +1,6 @@
 package com.tinkerpop.gremlin.redis.structure;
 
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -38,6 +35,12 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
     @Override
     public void remove() {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, id);
+
+        String label = label();
+
+        super.remove();
+
         graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_in");
         graph.getDatabase().del("edge::" + String.valueOf(graph.getId()) + "::" + String.valueOf(id) + "::vertex_out");
 
@@ -49,9 +52,7 @@ public class RedisEdge extends RedisElement implements Edge, Edge.Iterators {
 
         graph.getDatabase().zrem("graph::" + String.valueOf(graph.getId()) + "::edges", String.valueOf(id));
 
-        graph.getDatabase().del("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label());
-
-        super.remove();
+        graph.getDatabase().del("graph::" + String.valueOf(graph.getId()) + "::edge_label_to_id", label);
     }
 
     @Override

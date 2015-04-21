@@ -112,6 +112,8 @@ public class RedisGraph implements Graph, Graph.Iterators {
     @Override
     public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if (ElementHelper.getIdValue(keyValues).isPresent())
+            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
 
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
 
