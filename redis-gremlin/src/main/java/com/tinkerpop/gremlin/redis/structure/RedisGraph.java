@@ -111,25 +111,13 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
-        // TODO: The reference implementation extracts a possible ID and label from the key/value pairs.
-        // Because we are assigning monotonically increasing vertex/edge ID's, we don't match that behavior
-
         ElementHelper.legalPropertyKeyValueArray(keyValues);
 
-        //Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-
-        /*if (null != idValue) {
-            if (this.vertices.containsKey(idValue))
-                throw Exceptions.vertexWithIdAlreadyExists(idValue);
-        } else {
-            idValue = RedisHelper.getNextId(this);
-        }*/
 
         final Vertex vertex = new RedisVertex(label, this);
 
-        // TODO: Support vertex properties
-        // ElementHelper.attachProperties(vertex, keyValues);
+        ElementHelper.attachProperties(vertex, keyValues);
 
         return vertex;
     }
@@ -220,8 +208,6 @@ public class RedisGraph implements Graph, Graph.Iterators {
 
         return new RedisEdgeIterator(this, ids);
     }
-
-    // TODO: Finish filling out the features below
 
     /**
      * Return RedisGraph feature set.

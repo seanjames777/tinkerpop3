@@ -19,11 +19,14 @@ public class RedisVertexProperty<V> extends RedisElement implements VertexProper
     private final RedisVertex vertex;
     private final String key;
 
-    public RedisVertexProperty(final RedisVertex vertex, final String key, final Object... propertyKeyValues) {
+    public RedisVertexProperty(final RedisVertex vertex, final String key, final V value, final Object... propertyKeyValues) {
         super(key, vertex.graph);
 
         this.vertex = vertex;
         this.key = key;
+
+        graph.getDatabase().hset("element::" + String.valueOf(graph.getId()) + "::" + String.valueOf(vertex.id()) + "::properties",
+                key, (String)value);
 
         ElementHelper.legalPropertyKeyValueArray(propertyKeyValues);
         ElementHelper.attachProperties(this, propertyKeyValues);
